@@ -12,7 +12,6 @@ class UserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-    # Метод create_superuser оставим для совместимости, но он будет работать как обычный create_user
     def create_superuser(self, email, username, password=None, **extra_fields):
         return self.create_user(email, username, password, **extra_fields)
 
@@ -28,7 +27,30 @@ class User(AbstractBaseUser):
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
 
-    objects = UserManager()  # Кастомный менеджер
+    objects = UserManager()
 
     def __str__(self):
         return self.username
+
+
+class Referral(models.Model):
+    PENDING = 'pending'
+    SUCCESSFUL = 'successful'
+    STATUS_CHOICES = [
+        (PENDING, 'Pending'),
+        (SUCCESSFUL, 'Successful'),
+    ]
+    referrer = models.ForeignKey(User, related_name='referrals_made', on_delete=models.CASCADE)
+    referred_user = models.ForeignKey(User, related_name='referred_by_user', on_delete=models.CASCADE)
+    date_referred = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default=PENDING)
+    reward_earned = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['referrer']),
+            models.Index(fields=['referred_user']),
+        ]
+
+    def __str__(self):
+        return f"{self.referrer.username} -> {self.referred_user.username}"
