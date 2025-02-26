@@ -1,3 +1,4 @@
+from django.contrib.auth.models import User as DjangoUser
 from django.http import JsonResponse
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -5,39 +6,45 @@ from rest_framework_simplejwt.tokens import RefreshToken
 import bcrypt
 import uuid
 from django.contrib.auth import authenticate, get_user_model
+from django.contrib.auth.tokens import default_token_generator
+from django.core.mail import send_mail
+from users.models import User
 
 
 User = get_user_model()
-
-
 
 class RegisterUser(APIView):
     def post(self, request):
         email = request.data.get("email")
         username = request.data.get("username")
         password = request.data.get("password")
-        referral_code = request.data.get("referral_code")
+        referral_code = request.data.get("referral_code")  # Ref code may be empty
 
+        # Checking existing email
         if get_user_model().objects.filter(email=email).exists():
             return JsonResponse({"message": "Email already in use"}, status=400)
 
         referrer = None
         if referral_code:
             try:
+                # Check if the code is a valid UUID
                 if not self.is_valid_uuid(referral_code):
                     return JsonResponse({"message": "Invalid referral code"}, status=400)
 
+                # Get referrer on reference code
                 referrer = get_user_model().objects.get(referral_code=referral_code)
             except get_user_model().DoesNotExist:
                 return JsonResponse({"message": "Referrer does not exist"}, status=400)
 
+        # Creating user
         user = get_user_model().objects.create_user(
             email=email,
             username=username,
             password=password,
-            referred_by=referrer
+            referred_by=referrer  # If there is a referee, we assign him
         )
 
+        # JWT Token Generation
         refresh = RefreshToken.for_user(user)
         access_token = str(refresh.access_token)
         return Response({
@@ -57,11 +64,13 @@ class LoginUser(APIView):
         email = request.data.get("email")
         password = request.data.get("password")
 
+        # Check if a user exists with the specified email
         try:
             user = get_user_model().objects.get(email=email)
         except get_user_model().DoesNotExist:
             return JsonResponse({"message": "Invalid credentials"}, status=401)
 
+        # Check password
         if not user.check_password(password):
             return JsonResponse({"message": "Invalid credentials"}, status=401)
 
@@ -75,4 +84,45 @@ class LoginUser(APIView):
 
 
 
+
+
+class ForgotPassword(APIView):
+    def post(self, request):
+        email = request.data.get("email")
+
+        # Find user by email
+        try:
+            user = DjangoUser.objects.get(email=email)
+        except DjangoUser.DoesNotExist:
+            return JsonResponse({"message": "User with this email does not exist"}, status=404)
+
+        # Generate password recovery token
+        token = default_token_generator.make_token(user)
+        reset_link = f"http://localhost:8000/reset-password/{token}"
+
+        # Send email with link
+        send_mail(
+            "Password Reset Request",
+            f"Click the link to reset your password: {reset_link}",
+            "noreply@yourdomain.com",
+            [email],
+        )
+
+        return JsonResponse({"message": "Password reset link has been sent to your email."})
+
+class ResetPassword(APIView):
+    def post(self, request, token):
+        new_password = request.data.get("new_password")
+
+        # Token check
+        try:
+            user = DjangoUser.objects.get(username=request.data.get("username"))
+            if default_token_generator.check_token(user, token):
+                user.set_password(new_password)
+                user.save()
+                return JsonResponse({"message": "Password reset successful."})
+            else:
+                return JsonResponse({"message": "Invalid or expired token."}, status=400)
+        except DjangoUser.DoesNotExist:
+            return JsonResponse({"message": "User not found."}, status=404)
 
