@@ -1,6 +1,8 @@
+from datetime import datetime, timedelta
 from django.contrib.auth.models import User as DjangoUser
 from django.http import JsonResponse
 from django.core.cache import cache
+from django_ratelimit.decorators import ratelimit
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -11,15 +13,40 @@ from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from users.models import User, Referral
+import bleach
 
 User = get_user_model()
 
+def sanitize_input(data):
+    return bleach.clean(data)
+
+
 class RegisterUser(APIView):
     def post(self, request):
-        email = request.data.get("email")
-        username = request.data.get("username")
-        password = request.data.get("password")
-        referral_code = request.data.get("referral_code")  # Ref code may be empty
+        # Rate limiting check (5 requests per minute)
+        ip = request.META.get('REMOTE_ADDR')
+        now = datetime.now()
+
+        # Check the number of requests for this IP in the last minute
+        key = f"register_rate_limit_{ip}"
+        timestamps = cache.get(key, [])
+
+        # Remove expired timestamps
+        timestamps = [ts for ts in timestamps if ts > now - timedelta(minutes=1)]
+
+        if len(timestamps) >= 5:
+            return JsonResponse({"message": "Rate limit exceeded"}, status=429)
+
+        # Add the current timestamp
+        timestamps.append(now)
+        cache.set(key, timestamps, timeout=60)
+
+        email = sanitize_input(request.data.get("email"))
+        username = sanitize_input(request.data.get("username"))
+        password = sanitize_input(request.data.get("password"))
+        referral_code = sanitize_input(request.data.get("referral_code"))  # Ref code may be empty
+
+
 
         # Checking existing email
         if get_user_model().objects.filter(email=email).exists():
@@ -68,6 +95,19 @@ class RegisterUser(APIView):
         refresh = RefreshToken.for_user(user)
         access_token = str(refresh.access_token)
 
+        response = Response({
+            "message": "User created successfully",
+        }, status=201)
+
+        response.set_cookie(
+            key='access_token',
+            value=access_token,
+            httponly=True,
+            secure=True,
+            samesite='Lax'
+        )
+
+
         return Response({
             "message": "User created successfully",
             "access_token": access_token
@@ -82,6 +122,24 @@ class RegisterUser(APIView):
 
 class LoginUser(APIView):
     def post(self, request):
+        # Rate limiting check (5 requests per minute)
+        ip = request.META.get('REMOTE_ADDR')
+        now = datetime.now()
+
+        # Check the number of requests for this IP in the last minute
+        key = f"login_rate_limit_{ip}"
+        timestamps = cache.get(key, [])
+
+        # Remove expired timestamps
+        timestamps = [ts for ts in timestamps if ts > now - timedelta(minutes=1)]
+
+        if len(timestamps) >= 5:
+            return JsonResponse({"message": "Rate limit exceeded"}, status=429)
+
+        # Add the current timestamp
+        timestamps.append(now)
+        cache.set(key, timestamps, timeout=60)
+
         email = request.data.get("email")
         password = request.data.get("password")
 
