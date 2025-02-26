@@ -20,6 +20,7 @@ class User(AbstractBaseUser):
     username = models.CharField(max_length=255, unique=True)
     referral_code = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     referred_by = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True)
+    credits = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     created_at = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
     last_login = models.DateTimeField(auto_now=True)
