@@ -1,15 +1,16 @@
 from django.contrib.auth.models import User as DjangoUser
 from django.http import JsonResponse
+from django.core.cache import cache
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
-import bcrypt
 import uuid
 from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
-from users.models import User
-
+from users.models import User, Referral
 
 User = get_user_model()
 
@@ -44,9 +45,29 @@ class RegisterUser(APIView):
             referred_by=referrer  # If there is a referee, we assign him
         )
 
+        # If reference code was specified, create an entry in the Referral
+        if referrer:
+            referral = Referral.objects.create(
+                referrer=referrer,
+                referred_user=user,
+                status=Referral.PENDING  # Awaiting confirmation
+            )
+
+            ''' Here we add logic to upgrade status to SUCCESSFUL
+            After the user has been successfully created, we update the status of the review '''
+
+            referral.status = Referral.SUCCESSFUL
+            referral.reward_earned = 10
+            referral.save()
+
+            # We award referee bonuses
+            referrer.credits += 10
+            referrer.save()
+
         # JWT Token Generation
         refresh = RefreshToken.for_user(user)
         access_token = str(refresh.access_token)
+
         return Response({
             "message": "User created successfully",
             "access_token": access_token
@@ -83,6 +104,33 @@ class LoginUser(APIView):
         }, status=200)
 
 
+class ReferralStats(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+
+        # Try to take from cache
+        referrals_count = cache.get(f'referrals_count_{user.id}')
+
+        if referrals_count is None:
+            # Count referrals through the Referral table
+            referrals_count = Referral.objects.filter(referrer=user, status=Referral.SUCCESSFUL).count()
+
+            # Cache result
+            cache.set(f'referrals_count_{user.id}', referrals_count, timeout=60)
+
+        return JsonResponse({"referrals_count": referrals_count})
+
+
+class ReferralLink(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        referral_link = f"http://127.0.0.1:8000/api/register?referral_code={user.referral_code}"
+        return JsonResponse({"referral_link": referral_link})
+
 
 
 
@@ -98,7 +146,7 @@ class ForgotPassword(APIView):
 
         # Generate password recovery token
         token = default_token_generator.make_token(user)
-        reset_link = f"http://localhost:8000/reset-password/{token}"
+        reset_link = f"http://127.0.0.1:8000/api/reset-password/{token}"
 
         # Send email with link
         send_mail(
