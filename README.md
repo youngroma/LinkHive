@@ -1,8 +1,8 @@
-# LinkHive Backend API
+# ReferralkHive Backend API Documentation
 
 ## Overview
 
-This backend API provides user registration, login, and referral system functionalities for a platform similar to Linktr.ee or Bento.me. It is built using Django Rest Framework (DRF), leveraging JWT for authentication, and includes various features like password reset, referral system, and rate limiting.
+This backend API is designed to offer essential user management functionalities, including user registration, login, and a comprehensive referral system. It is developed using Django Rest Framework (DRF) with JWT (JSON Web Token) authentication for secure user sessions. The platform offers several key features, such as password recovery, a reward-based referral system, and rate limiting, creating an engaging and interactive user experience
 
 ## Features
 
@@ -73,6 +73,7 @@ This backend API provides user registration, login, and referral system function
     {
       "username": "user123",
       "new_password": "newpassword123"
+      "confirm_password": "newpassword123"
     }
     ```
 - **Response**:
