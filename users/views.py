@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from django.contrib.auth.models import User as DjangoUser
+from django.contrib.auth import get_user_model
 from django.http import JsonResponse
 from django.core.cache import cache
 from django_ratelimit.decorators import ratelimit
@@ -15,7 +15,7 @@ from django.core.mail import send_mail
 from users.models import User, Referral
 import bleach
 
-User = get_user_model()
+DjangoUser = get_user_model()
 
 def sanitize_input(data):
     return bleach.clean(data)
