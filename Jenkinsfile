@@ -4,14 +4,14 @@ pipeline {
     environment {
         DOCKER_IMAGE_NAME = "youngroma/referralhive"
         DOCKER_TAG = "latest"
-        REGISTRY_CREDENTIALS = 'dockerhub-credentials'  // ID Jenkins Credentials для Docker Hub
+        REGISTRY_CREDENTIALS = 'dockerhub-credentials'
         DOCKER_COMPOSE_FILE = 'docker-compose.yml'
     }
 
     stages {
         stage('Checkout') {
             steps {
-                checkout scm
+                echo "Skipping checkout, since it's managed in Jenkins UI."
             }
         }
 
@@ -27,6 +27,9 @@ pipeline {
         stage('Run Tests') {
             steps {
                 script {
+                    echo "Creating Docker network..."
+                    sh "docker network create mynetwork || true"
+
                     echo "Running tests..."
                     sh "docker-compose -f ${DOCKER_COMPOSE_FILE} run --rm web python manage.py test"
                 }
@@ -37,7 +40,8 @@ pipeline {
             steps {
                 script {
                     echo "Logging in to Docker Hub..."
-                    withDockerRegistry([credentialsId: REGISTRY_CREDENTIALS]) {
+                    withCredentials([usernamePassword(credentialsId: REGISTRY_CREDENTIALS, usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                        sh "echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin"
                         sh "docker push ${DOCKER_IMAGE_NAME}:${DOCKER_TAG}"
                     }
                 }
@@ -47,8 +51,8 @@ pipeline {
 
     post {
         always {
-            echo "Cleaning up Docker cache..."
-            sh "docker system prune -f"
+            echo "Cleaning up unused Docker images..."
+            sh "docker image prune -f"
         }
     }
 }
