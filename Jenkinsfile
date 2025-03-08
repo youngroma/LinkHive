@@ -19,7 +19,7 @@ pipeline {
             steps {
                 script {
                     echo "Building Docker image..."
-                    sh "docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ."
+                    bat "docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ."
                 }
             }
         }
@@ -28,10 +28,10 @@ pipeline {
             steps {
                 script {
                     echo "Creating Docker network..."
-                    sh "docker network create mynetwork || true"
+                    bat "docker network create mynetwork || echo Network already exists."
 
                     echo "Running tests..."
-                    sh "docker-compose -f ${DOCKER_COMPOSE_FILE} run --rm web python manage.py test"
+                    bat "docker-compose -f ${DOCKER_COMPOSE_FILE} run --rm web python manage.py test"
                 }
             }
         }
@@ -41,8 +41,8 @@ pipeline {
                 script {
                     echo "Logging in to Docker Hub..."
                     withCredentials([usernamePassword(credentialsId: REGISTRY_CREDENTIALS, usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        sh "echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin"
-                        sh "docker push ${DOCKER_IMAGE_NAME}:${DOCKER_TAG}"
+                        bat "echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USERNAME% --password-stdin"
+                        bat "docker push ${DOCKER_IMAGE_NAME}:${DOCKER_TAG}"
                     }
                 }
             }
@@ -52,7 +52,7 @@ pipeline {
     post {
         always {
             echo "Cleaning up unused Docker images..."
-            sh "docker image prune -f"
+            bat "docker image prune -f"
         }
     }
 }
