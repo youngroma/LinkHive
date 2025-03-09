@@ -18,7 +18,26 @@ pipeline {
         REDIS_PORT = "6379"
     }
 
-    stages {
+    stages {      
+        stage('Create .env file') {
+                    steps {
+                        script {
+                            echo "Creating .env file..."
+                            writeFile file: '.env', text: """
+                                SECRET_KEY=${SECRET_KEY}
+                                DB_USER=${DB_USER}
+                                DB_PASSWORD=${DB_PASSWORD}
+                                DB_HOST=${DB_HOST}
+                                DB_PORT=${DB_PORT}
+                                DB_NAME=${DB_NAME}
+                                REDIS_HOST=${REDIS_HOST}
+                                REDIS_PORT=${REDIS_PORT}
+                            """
+                        }
+                    }
+                }
+
+        
         stage('Checkout') {
             steps {
                 echo "Skipping checkout, since it's managed in Jenkins UI."
@@ -37,18 +56,6 @@ pipeline {
         stage('Run Tests') {
             steps {
                 script {
-                    echo "Creating .env file..."
-                    writeFile file: '.env', text: """
-                        SECRET_KEY=${SECRET_KEY}
-                        DB_USER=${DB_USER}
-                        DB_PASSWORD=${DB_PASSWORD}
-                        DB_HOST=${DB_HOST}
-                        DB_PORT=${DB_PORT}
-                        DB_NAME=${DB_NAME}
-                        REDIS_HOST=${REDIS_HOST}
-                        REDIS_PORT=${REDIS_PORT}
-                    """
-
                     echo "Running tests..."
                     bat "docker-compose --env-file .env -f ${DOCKER_COMPOSE_FILE} run --rm web python manage.py test"
                 }
