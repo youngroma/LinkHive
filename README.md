@@ -1,4 +1,4 @@
-# ReferralkHive Backend API Documentation
+# ReferralHive Backend API Documentation
 
 ## Overview
 
@@ -11,6 +11,7 @@ This backend API is designed to offer essential user management functionalities,
 - **Password Reset**: Users can reset passwords using email-based tokens.
 - **Rate Limiting**: Protection against abuse by limiting the number of requests to registration and login endpoints.
 - **Security**: Passwords are securely hashed, and the system is protected against common vulnerabilities.
+- **Jenkins Integration**: The project uses Jenkins for CI/CD, automating the build, test, and deployment processes to ensure smooth and reliable development cycles.
 
 ## API Endpoints
 
@@ -122,3 +123,21 @@ Rate limiting is applied to prevent abuse:
 - Password reset functionality.
 - Ensure that edge cases such as invalid referral codes, self-referrals, and tracking of successful referrals are handled.
 
+## CI/CD with Jenkins
+
+This project uses Jenkins for Continuous Integration and Continuous Deployment (CI/CD). The Jenkins pipeline automates the process of building, testing, and deploying the application, ensuring efficient and error-free development cycles.
+
+Pipeline Stages:
+- Create .env File
+- Build Docker Image
+- Run Tests
+- Push Docker Image to Registry
+- Post Actions
+  - Cleaning up unused Docker images
+  - Deleting the .env file
+
+### Credentials and Secrets Management
+The pipeline uses Jenkins' Credentials Manager to securely manage and use sensitive data such as the SECRET_KEY, DB_USER, and DB_PASSWORD. These credentials are stored in Jenkins and are accessed using the withCredentials block to ensure that no sensitive information is exposed in the pipeline.
+
+### Docker Registry
+The image is pushed to Docker Hub using the docker.withRegistry block. This enables the team to have access to the latest Docker image version for deployment and testing in different environments.
