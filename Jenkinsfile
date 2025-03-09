@@ -28,7 +28,7 @@ pipeline {
             steps {
                 script {
                     echo "Running tests..."
-                    bat "docker-compose -f ${DOCKER_COMPOSE_FILE} run --rm web python manage.py test"
+                    bat "docker-compose --env-file .env -f ${DOCKER_COMPOSE_FILE} run --rm web python manage.py test"
                 }
             }
         }
