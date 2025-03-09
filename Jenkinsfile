@@ -71,6 +71,9 @@ pipeline {
         always {
             echo "Cleaning up unused Docker images..."
             bat "docker image prune -f"
+
+            echo "Deleting .env file..."
+            bat "del .env"
         }
     }
 }
