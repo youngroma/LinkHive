@@ -20,22 +20,26 @@ pipeline {
 
     stages {      
         stage('Create .env file') {
-                    steps {
-                        script {
-                            echo "Creating .env file..."
-                            writeFile file: '.env', text: """
-                                SECRET_KEY=${SECRET_KEY}
-                                DB_USER=${DB_USER}
-                                DB_PASSWORD=${DB_PASSWORD}
-                                DB_HOST=${DB_HOST}
-                                DB_PORT=${DB_PORT}
-                                DB_NAME=${DB_NAME}
-                                REDIS_HOST=${REDIS_HOST}
-                                REDIS_PORT=${REDIS_PORT}
-                            """
-                        }
+            steps {
+                script {
+                    withCredentials([string(credentialsId: 'SECRET_KEY_ID', variable: 'SECRET_KEY'),
+                                      string(credentialsId: 'DB_USER_ID', variable: 'DB_USER'),
+                                      string(credentialsId: 'DB_PASSWORD_ID', variable: 'DB_PASSWORD')]) {
+                        echo "Creating .env file..."
+                        writeFile file: '.env', text: """
+                            SECRET_KEY=${SECRET_KEY}
+                            DB_USER=${DB_USER}
+                            DB_PASSWORD=${DB_PASSWORD}
+                            DB_HOST=${DB_HOST}
+                            DB_PORT=${DB_PORT}
+                            DB_NAME=${DB_NAME}
+                            REDIS_HOST=${REDIS_HOST}
+                            REDIS_PORT=${REDIS_PORT}
+                        """
                     }
                 }
+            }
+        }
 
         stage('Build Docker Image') {
             steps {
