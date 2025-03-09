@@ -37,13 +37,6 @@ pipeline {
                     }
                 }
 
-        
-        stage('Checkout') {
-            steps {
-                echo "Skipping checkout, since it's managed in Jenkins UI."
-            }
-        }
-
         stage('Build Docker Image') {
             steps {
                 script {
