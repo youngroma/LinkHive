@@ -27,9 +27,6 @@ pipeline {
         stage('Run Tests') {
             steps {
                 script {
-                    echo "Creating Docker network..."
-                    bat "docker network create mynetwork || echo Network already exists."
-
                     echo "Running tests..."
                     bat "docker-compose -f ${DOCKER_COMPOSE_FILE} run --rm web python manage.py test"
                 }
