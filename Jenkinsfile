@@ -59,7 +59,7 @@ pipeline {
             steps {
                 script {
                     echo "Logging in to Docker Hub..."
-                    withCredentials([usernamePassword(credentialsId: REGISTRY_CREDENTIALS, usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                         bat "echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USERNAME% --password-stdin"
                         bat "docker push ${DOCKER_IMAGE_NAME}:${DOCKER_TAG}"
                     }
