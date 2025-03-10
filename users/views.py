@@ -196,6 +196,9 @@ class ForgotPassword(APIView):
     def post(self, request):
         email = request.data.get("email")
 
+        if not email:
+            return JsonResponse({"message": "Email is required"}, status=400)
+
         # Find user by email
         try:
             user = DjangoUser.objects.get(email=email)
