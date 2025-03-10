@@ -1,5 +1,5 @@
 """
-ASGI config for platform_similar_to_linktree project.
+ASGI config for referralhive project.
 
 It exposes the ASGI callable as a module-level variable named ``application``.
 
@@ -11,6 +11,6 @@ import os
 
 from django.core.asgi import get_asgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'platform_similar_to_linktree.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'referralhive.settings')
 
 application = get_asgi_application()

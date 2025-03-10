@@ -1,5 +1,5 @@
 """
-WSGI config for platform_similar_to_linktree project.
+WSGI config for referralhive project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 
@@ -11,6 +11,6 @@ import os
 
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'platform_similar_to_linktree.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'referralhive.settings')
 
 application = get_wsgi_application()
