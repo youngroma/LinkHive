@@ -222,6 +222,11 @@ class ForgotPassword(APIView):
 class ResetPassword(APIView):
     def post(self, request, token):
         new_password = request.data.get("new_password")
+        confirm_password = request.data.get("confirm_password")
+
+        # Password match check
+        if new_password != confirm_password:
+            return JsonResponse({"message": "Passwords do not match."}, status=400)
 
         # Token check
         try:
